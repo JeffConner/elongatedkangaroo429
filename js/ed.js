@@ -4,11 +4,8 @@
 const J=window.J,S=J.S,v=S.visits;
 S.ed=v<=4?v-1:v===5?4:5;J.mock=S.ed===4;J.mix=S.ed===5;
 let order=S.prev&&S.prev.order;if(!order||order.length!==J.POOL.length)order=J.shuffle(J.POOL);S.order=order;
-const L=order.map(x=>[x,0]).concat(order.map(x=>[x,1]));
-const cut=v===1?L.slice(0,7):v===2?L.slice(7,14):v===3?L.slice(14,20):J.shuffle(L).slice(0,v===5?4:7);
-S.sedOf={};S.plan=[];cut.forEach(x=>{if(S.plan.indexOf(x[0])<0){S.plan.push(x[0]);S.sedOf[x[0]]=x[1]}});
-S.sedBase=v<=3?0:-1;S.sed=0;
-if(!new URLSearchParams(location.search).get("run"))J.RUN=S.plan.length;
+/* the plan (which frame, which units) is built in frames.js once every frame has registered */
+S.sedBase=v<=4?0:-1;S.sed=0;
 J.sedFor=()=>S.sedBase<0?J.ri(0,1):S.sedBase;
 J.v=(a,b)=>S.sed?b:a;
 J.e=arr=>S.ed<4?arr[S.ed%arr.length]:(J.mock&&arr.length>4)?arr[4]:arr[J.ri(0,Math.min(arr.length,4)-1)];
@@ -27,7 +24,7 @@ const TH=[
   {f:49,w:"sawtooth",lp:320,pm:.5,vp:.45,vr:.62,grain:.22,c:{bg:"#010a03",bone:"#74ff8f",dim:"#2f9a4c",rust:"#e8ff3d",dried:"#063015",bile:"#ffb000",panel:"#03160a",line:"#0f4a22"}},
   {f:110,w:"square",lp:700,pm:1.9,vp:1.5,vr:1.3,grain:.05,c:{bg:"#0a0614",bone:"#ece4ff",dim:"#8776b5",rust:"#ff3df2",dried:"#2a0f45",bile:"#3dfff2",panel:"#150c28",line:"#2f1d52"}}
 ];
-TH.forEach((t,i)=>{t.c.ink=["#d9cfb8","#efe6d0","#ffe1d6","#74ff8f","#ece4ff"][i]});S.tb=(S.prev&&S.prev.tb!=null)?S.prev.tb:J.ri(0,3);S.th=J.mock?4:(S.tb+v-1)%4;J.TH=TH[S.th];J.C=J.TH.c;
+TH.forEach((t,i)=>{t.c.ink=["#d9cfb8","#efe6d0","#ffe1d6","#74ff8f","#ece4ff"][i]});S.tb=(S.prev&&S.prev.tb!=null)?S.prev.tb:J.ri(0,3);S.th=J.mock?4:(S.tb+v-1)%4;{const q=new URLSearchParams(location.search).get("th");if(q!=null&&q!==""&&TH[+q])S.th=+q}J.TH=TH[S.th];J.C=J.TH.c;
 const rs=document.documentElement.style;Object.keys(J.C).forEach(k=>rs.setProperty("--"+k,J.C[k]));
 document.body.classList.add("ed-"+S.th);document.documentElement.style.background=J.C.bg;
 const gr=document.getElementById("grain");if(gr)gr.style.opacity=J.TH.grain;
@@ -67,7 +64,10 @@ J.PX=["Please, Teeth, No More Teeth!!!!","does jeff ever sleep. asking because h
   "oops. this is NOT jeffbook, my bad\n\nedit: it is. it's all jeffbook. my front door opens onto it.","don't stop jeff from being jeff. we tried once. that's why there's two basements.","sorry jeff","you should name them jeff. the baby. the dog. the thing in the yard. it saves time later."];
 J.MOCKP=["he's back. FIVE. somebody take his {model} away.","we don't even hide anymore when he comes in. look. i'm just standing here. hi.","fifth visit. at this point you're not the victim. you're a regular.",
   "he knows the tooth is loose. he knows what's behind it. he's going to act surprised anyway. watch him.","mods can we get him a punch card. tenth haunting free.","I really hate this Jeff","Jeff, are you ok?\n\n(sincerely this time)","Go to bed Jeff.",
-  "No One Asked You Jeff. five times no one asked you.","does he think there's a prize. there's no prize. there's just us. and we're tired.","the group voted. you're the weird one now. it was unanimous. you voted too.","we scared him four different ways and he came back for a fifth. who's haunting who."];
+  "No One Asked You Jeff. five times no one asked you.","does he think there's a prize. there's no prize. there's just us. and we're tired.","the group voted. you're the weird one now. it was unanimous. you voted too.","we scared him four different ways and he came back for a fifth. who's haunting who.",
+  "we lived in your apps for a whole visit. you checked the weather inside your own hallway. and you came back for MORE?",
+  "he sat through an entire overnight broadcast. the sign-off and everything. and now he's back on the feed like it's a normal feed. it is a normal feed. that's the insult.",
+  "#{no} walked the whole house last time. every room. we left the bedroom light on. he came here instead. to the FEED."];
 J.DEVP=["new member is on an {model}. {scr}. we can tell by the shape of the glass. it's a small window but we fit.","back on the {model}. {scr}. same one. there's a thumbprint on it that isn't yours. lower left.",
   "{model}. {cores} cores. he only uses one. we use the rest.","the {model} is set to {lang}. so are we now. took a while. listen: hello. hello. hello.","still the {model}? five visits and you never once thought to bring a different phone. we like this one. it knows us."];
 J.AMB=["Jeff poked you.","Jeff poked you. From the inside of the screen.","Jeff liked a photo you haven't taken yet.","Jeff is {w} pixels away.","Jeff changed your relationship status to 'contained'.","Your {model} is warm. That's him.","Jeff mentioned you in a comment: 'soon'.",

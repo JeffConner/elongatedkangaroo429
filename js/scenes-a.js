@@ -17,9 +17,8 @@ J.scene("gate",st=>{
   const go=txt("button","btn","I am of sound mind"),no=txt("button","btn ghost","I am impressionable");
   c.appendChild(go);c.appendChild(no);
   const start=()=>{
-    A.init();J.say(" ",{vol:0});S.t0=Date.now();A.thump();
-    S.callAt=J.ri(1,3);S.msgAt=J.ri(1,2);
-    if(S.prev&&S.prev.no){S.no=S.prev.no;S.face=S.prev.face||1;S.raw=S.prev.raw||"";S.teeth=(S.prev.teeth||32)+J.ri(1,3);J.go("hub")}
+    J.start();
+    if(S.visits>1)J.next();
     else J.go("onboard");
   };
   go.addEventListener("click",start);
@@ -82,7 +81,7 @@ J.scene("onboard",st=>{
     b.addEventListener("click",()=>{
       S.teeth=n+1;S.no=J.ri(1300,98000);J.save();b.disabled=true;A.thump();
       v.textContent=n+1;cap.textContent="We have you down for "+(n+1)+".";
-      J.after(2400,()=>J.go("hub"));
+      J.after(2400,()=>J.next());
     });
   };
   stepName();
@@ -162,10 +161,11 @@ const AFTER2={mouth:"he pulled the same tooth again. it's a subscription now.",d
 const HOOKS2={mouth:["Jeff updated a photo","it grew back. come see.","look again"],dm:["Message request","1 new message from: someone using your name better than you do","open it"],market:["Jeff restocked","JEFF BUY SELL TRADE: everything you didn't buy last time, plus what you did","browse"],
   live:["Jeff is live again","'outside the same window. closer.'","watch"],memory:["On this night, again","Jeff tagged you again. Same night. You look worse.","see your memory"],mirror:["Jeff kept something of yours","you left it in the mirror","go get it"],
   confess:["Post an update","The group heard a rumor about you. Clear it up.","write post"],ghost:["Second security alert","He's on your phone again.","watch again"],hold:["Group activity","'hold still again. he missed you.'","join"],event:["EVENT TONIGHT","Jeff's funeral (all of us). Location: the walls.","RSVP"]};
+const AWAYH=[["Group update","The group moved. It left the lights on so you'd follow.","follow it"],["Group update","Everyone went somewhere else. Your name is on the door.","go after them"]];
 const FINALH=[["Group update","You have been made admin.","accept"],["Group update","There's been another promotion.","accept"],["Group update","The group has a new floor.","see who"],["Group update","The group has been renamed.","see the name"]];
 
 J.scene("hub",st=>{
-  if(S.done>=S.callAt&&!S.called&&S.done<J.RUN){S.called=true;return J.go("call")}
+  if(S.done>=S.callAt&&!S.called&&S.done<J.RUN&&!J.mix){S.called=true;return J.go("call")}
   const lvl=S.done,you=lvl>=4,wr=J.wrong();
   const head=el("div","ghead");
   head.appendChild(txt("div","k",J.e(["CLOSED GROUP / YOU ARE ALREADY IN IT", "CLOSED GROUP / CLOSED BEHIND YOU", "PRIVATE GROUP / VISIBLE FROM INSIDE THE WALLS", "SECRET GROUP / YOU ARE THE SECRET"])));
@@ -200,14 +200,15 @@ J.scene("hub",st=>{
   if(lvl>=2&&S.fast>2&&!used._f){used._f=1;qe(["new guy taps like he's being chased. he is. but still.",null,"he's tapping fast again. it doesn't speed us up. we have one speed. it's behind you.",null])}
   if(lvl>=2&&S.away>0&&!used._a){used._a=1;qe(["he looked away "+S.away+(S.away===1?" time":" times")+". we counted. it's what we do. we looked at him the whole time he wasn't looking.",null,null,"he looked away again. "+S.away+". whatever he's checking on over there, it's also us."])}
   if(lvl>=2&&S.defy>1&&!used._d){used._d=1;qe([null,"the new guy hangs up on us. it's fine. we're in the phone, not on it.","he turned the camera down. smart. the mirror in his hallway works either way.",null])}
-  for(let q=0;q<2;q++){const t=J.draw("post",J.mock?J.MOCKP:POSTS.concat(J.PX));queue.push(()=>mkPost(J.rot(J.fill(t),lvl),{tag:true}))}
-  const nxt=S.done>=J.RUN?"final":J.nextScene();if(nxt in S.sedOf)S.sed=S.sedOf[nxt];const hk=nxt==="final"?J.e(FINALH):((S.sed&&HOOKS2[nxt])||HOOKS[nxt]);
+  for(let q=0;q<(S.ed===0&&lvl<4?3:2);q++){const t=J.draw("post",J.mock?J.MOCKP:POSTS.concat(J.PX),S.ed===0?1:4);queue.push(()=>mkPost(J.rot(J.fill(t),lvl),{tag:true}))}
+  const leftF=J.left("feed"),nxt=leftF.length?J.nextScene(leftF):J.undone().length?"_away":"final";
+  const hk=nxt==="final"?J.e(FINALH):nxt==="_away"?J.pick(AWAYH):((S.sed&&HOOKS2[nxt])||HOOKS[nxt]);
   queue.push(()=>{
     const p=el("div","post hook fade");p.appendChild(txt("div","k",hk[0].toUpperCase()));
     const tx=txt("div","tx",hk[1]);tx.style.marginTop="6px";p.appendChild(tx);
     const b=txt("button","btn",hk[2]);p.appendChild(b);
     const born=Date.now();
-    b.addEventListener("click",()=>{const d=Date.now()-born;if(d<2500)S.fast++;if(d>30000)S.slow++;A.thump();J.go(nxt)});
+    b.addEventListener("click",()=>{const d=Date.now()-born;if(d<2500)S.fast++;if(d>30000)S.slow++;A.thump();if(nxt==="_away")J.next();else J.go(nxt)});
     return p;
   });
   queue.forEach((f,i)=>J.after(300+i*1300,()=>{feed.appendChild(f());A.pop()}));
@@ -265,6 +266,7 @@ J.scene("call",st=>{
 
 /* ---------- the end ---------- */
 const DID={mouth:"pulled one",dm:"talked to himself",market:"went shopping",live:"watched the stream",memory:"found himself in the photo",mirror:"left one in the mirror",confess:"confessed",ghost:"lent out his phone",hold:"held on",event:"came to the party"};
+J.DID=Object.assign(J.DID||{},DID);
 function wrap(g,text,x,y,maxW,lh){
   const words=text.split(" ");let line="";
   for(let i=0;i<words.length;i++){const t=line?line+" "+words[i]:words[i];if(g.measureText(t).width>maxW&&line){g.fillText(line,x,y);y+=lh;line=words[i]}else line=t}
@@ -287,7 +289,7 @@ J.scene("final",st=>{
     g.font="22px 'Special Elite','Courier New',monospace";g.fillStyle=J.C.rust;g.fillText("ADMIN. MEMBER SINCE BEFORE YOU.",340,448);
     g.fillStyle=J.C.ink;g.textAlign="left";g.font="24px 'Special Elite','Courier New',monospace";let y=506;
     const rows=["Visit "+S.visits+" on this "+J.D.model+".","Teeth on file: "+S.teeth+" (we have "+(S.teeth+1)+")","Time in the group: "+mm+":"+(ss<10?"0":"")+ss+" (so far)","Looked away: "+S.away+(S.away===1?" time":" times")+" ("+Math.round(S.awayMs/1000)+" s)",
-      "Tonight he: "+S.run.map(k=>DID[k]).join(", ")+".","In his home now: "+(S.inv.length?S.inv.join("; "):"nothing he knows about")+".","Notes: "+verdict];
+      "Tonight he: "+S.run.map(k=>J.DID[k]).filter(Boolean).join(", ")+".","In his home now: "+(S.inv.length?S.inv.join("; "):"nothing he knows about")+".","Notes: "+verdict];
     rows.forEach(r=>{y=wrap(g,r,54,y,572,32)+10});
     g.fillStyle="#776d5c";g.font="19px 'Special Elite','Courier New',monospace";g.textAlign="center";g.fillText("fable6shot.faetempla.com   NOT RATED",340,884);
     c.appendChild(txt("div","k","YOUR FILE. SCREENSHOT IT. IT SCREENSHOTS YOU."));c.appendChild(cv);

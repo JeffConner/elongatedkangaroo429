@@ -1,7 +1,7 @@
 /* core: state, memory, sound, voice, faces, scene manager, router */
 (()=>{
 "use strict";
-const J=window.J={};J.C={bone:"#d9cfb8",ink:"#d9cfb8",rust:"#9a3a1c"};
+const J=window.J={};J.VERSION="2.3";J.C={bone:"#d9cfb8",ink:"#d9cfb8",rust:"#9a3a1c"};
 const $=s=>document.querySelector(s);
 J.$=$;
 J.el=(tag,cls,html)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e};
@@ -25,7 +25,7 @@ try{const qv=+qs.get("v"),qk=qs.get("k");if(qv>1&&(!prev||(prev.visits||0)<qv-1)
 const S=J.S={raw:"",face:1,no:0,teeth:32,inv:[],done:0,run:[],seen:(prev&&prev.seen)||[],away:0,awayMs:0,fast:0,slow:0,defy:0,t0:0,
   visits:((prev&&prev.visits)||0)+1,prev:prev,called:false,invite:null,delivered:false,callAt:2,msgAt:1};
 J.RUN=qs.get("run")?+qs.get("run"):7;
-J.save=()=>{try{localStorage.setItem(LS,JSON.stringify({visits:S.visits,no:S.no,face:S.face,teeth:S.teeth,inv:S.inv,last:Date.now(),raw:S.raw,seen:S.seen,order:S.order,tb:S.tb}))}catch(e){}};
+J.save=()=>{try{localStorage.setItem(LS,JSON.stringify({visits:S.visits,no:S.no,face:S.face,teeth:S.teeth,inv:S.inv,last:Date.now(),raw:S.raw,seen:S.seen,order:S.order,tb:S.tb,lastRun:S.run,lastF:S.frames||[],mem:S.memo||{}}))}catch(e){}};
 try{
   const m=location.hash.match(/j=([\w-]+)/);
   if(m){const o=JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g,"+").replace(/_/g,"/")))));S.invite={n:Math.abs(parseInt(o.n,10)||0),m:String(o.m||"").slice(0,110)}}
@@ -35,7 +35,7 @@ J.inviteURL=msg=>{
   return location.origin+location.pathname+"#j="+b;
 };
 J.mem=1204+J.ri(0,900);
-J.carry=()=>{const k=btoa(unescape(encodeURIComponent(JSON.stringify({no:S.no,face:S.face,raw:S.raw,teeth:S.teeth,order:S.order,tb:S.tb,seen:S.seen})))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");return location.pathname+"?v="+(S.visits+1)+"&k="+k};
+J.carry=()=>{const k=btoa(unescape(encodeURIComponent(JSON.stringify({no:S.no,face:S.face,raw:S.raw,teeth:S.teeth,order:S.order,tb:S.tb,seen:S.seen,lastRun:S.run,lastF:S.frames||[],mem:S.memo||{}})))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");return location.pathname+"?v="+(S.visits+1)+"&k="+k};
 
 /* ---------- things your own browser says about you ---------- */
 J.clock=(off)=>{const d=new Date(Date.now()+(off||0)*6e4);const h=d.getHours(),m=d.getMinutes();return((h%12)||12)+":"+(m<10?"0":"")+m+(h<12?" am":" pm")};
@@ -68,18 +68,15 @@ J.go=(n,arg)=>{
   scenes[n](st,arg);
 };
 const POOL=J.POOL=["mouth","dm","market","live","memory","mirror","confess","ghost","hold","event"];
-J.nextScene=()=>{
-  const left=(S.plan||POOL).filter(p=>S.run.indexOf(p)<0);
+J.nextScene=list=>{
+  const left=(list||POOL).filter(p=>S.run.indexOf(p)<0);
   const old=(S.prev&&S.prev.seen)||[];
   const w=left.map(p=>{let x=1;if(old.indexOf(p)<0)x+=1.6;if(S.fast>2&&(p==="hold"||p==="confess"))x+=1.4;if(S.defy>1&&(p==="ghost"||p==="mirror"))x+=1.2;if(S.away>0&&(p==="live"||p==="event"))x+=1.2;if(S.slow>1&&(p==="dm"||p==="live"))x+=1;return x});
   let r=J.rnd()*w.reduce((a,b)=>a+b,0);
   for(let i=0;i<left.length;i++){r-=w[i];if(r<=0)return left[i]}
   return left[0];
 };
-J.finish=name=>{
-  S.run.push(name);if(S.seen.indexOf(name)<0)S.seen.push(name);S.done++;S.last=name;J.save();A.level(S.done);
-  J.go("hub");
-};
+J.finish=name=>J.unitDone(name);
 
 /* ---------- sound ---------- */
 const A=J.A={};let ac=null,master=null,noiseBuf=null,brown=null,lp=null,dg=null,stG=null,ringT=0;
@@ -121,7 +118,7 @@ A.ring=on=>{
   const r=()=>{A.blip(880,0.35,"sine",0.12);A.blip(1100,0.35,"sine",0.1);A.blip(880,0.35,"sine",0.12,null,0.5);A.blip(1100,0.35,"sine",0.1,null,0.5);J.buzz([300,200,300])};
   r();ringT=setInterval(r,2400);
 };
-J.buzz=p=>{try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}};
+J.buzz=p=>{if(!S.t0)return;try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}};
 $("#snd").addEventListener("click",function(){J.sound=!J.sound;this.textContent="sound: "+(J.sound?"on":"off");if(ac)master.gain.value=J.sound?1:0;if(!J.sound){try{speechSynthesis.cancel()}catch(e){}}});
 
 /* ---------- the voice ---------- */
@@ -150,7 +147,7 @@ const AMBIENT=["Jeff poked you.","Jeff poked you. From the inside of the screen.
   "Your {dev} is warm. That's him.","Jeff mentioned you in a comment: 'soon'.","Jeff and 1,203 others are looking at this notification with you.","Reminder: you have {teeth} teeth. Jeff has the rest.",
   "Jeff is typing.","Jeff is typing on something that isn't a keyboard.","It is {t} in {city}. Jeff is also in {city}.","Jeff updated his profile picture. It's yours.","You have a memory with Jeff from tomorrow.",
   "Jeff shared a location: the other side of your door.","Jeff reacted to your breathing.","Someone you may know: you."];
-setInterval(()=>{if(!(S.t0&&!document.hidden&&J.cur!=="call"&&J.cur!=="final"&&Math.random()<0.5))return;for(let i=0;i<6;i++){J._miss=0;const t=J.fill(J.draw("amb",J.mock?J.MOCKT:J.AMB));if(!J._miss){J.toast(t);break}}},24000);
+setInterval(()=>{if(!(S.t0&&!document.hidden&&J.cur!=="call"&&J.cur!=="final"&&!J.quiet&&Math.random()<0.5))return;for(let i=0;i<6;i++){J._miss=0;const t=J.fill(J.draw("amb",J.mock?J.MOCKT:J.AMB));if(!J._miss){if(!(J.toastHook&&J.toastHook(t)))J.toast(t,0,J.TOASTHEAD);break}}},24000);
 setInterval(()=>{if(S.t0&&!document.hidden&&S.done>1&&Math.random()<0.25)J.cut(["MORE","UNDER","COUNT","JEFF","STILL HERE","YOURS","OPEN"][Math.floor(Math.random()*7)])},15000);
 
 /* ---------- it notices when you look away ---------- */
@@ -160,7 +157,8 @@ document.addEventListener("visibilitychange",()=>{
   else{
     document.title=realTitle;
     if(hidAt&&S.t0){const ms=Date.now()-hidAt;S.away++;S.awayMs+=ms;const s=Math.max(1,Math.round(ms/1000));
-      setTimeout(()=>J.toast("You were gone "+s+(s===1?" second":" seconds")+". We used them."),600)}
+      const AW=["You were gone {s}. We used them.","{s} away. The apps rearranged themselves while you were out.","{s} off air. The broadcast did not stop for you. It never stops for anyone.","{s} gone. The house moved one room closer.","{s}. Again. You keep doing that."];
+      const aw=(AW[S.ed<4?S.ed:4]||AW[0]).replace("{s}",s+(s===1?" second":" seconds"));setTimeout(()=>{if(!(J.toastHook&&J.toastHook(aw)))J.toast(aw,0,J.TOASTHEAD)},600)}
     hidAt=0;
   }
 });

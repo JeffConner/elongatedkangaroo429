@@ -12,10 +12,13 @@ J.scene("gate",st=>{
   else if(S.prev&&S.prev.no){const ag=J.ago(Date.now()-(S.prev.last||Date.now())),n=S.prev.no,w="Welcome back, Jeff #"+n+". You were gone "+ag+". We kept your spot warm. It is warm because someone has been sitting in it.";
     line=J.mix?"Visit "+S.visits+". From here on it is reruns, #"+n+". We shuffle them. You won't notice. You didn't notice the first time.":J.fill(J.e([w,w,"Three times now, #"+n+". Gone "+ag+". We changed the lights for you. And the sound. And what is under the floor. You'll see.","Jeff #"+n+". Fourth visit. Away "+ag+". We used the time to learn your {model}. {scr}. We fit better now.","Five. This is your fifth time, #"+n+". We ran out of new things to do to you at four. You are doing this to yourself now."]))}
   c.appendChild(txt("p","big",line));
-  const sm=txt("p","sm","About fifteen minutes. Sound on. Flashing, sudden noise, a voice, and a great many teeth. It remembers you between visits. Nothing you type leaves your phone unless you hand it to someone yourself.");
+  const back=S.visits>1;
+  const sm=txt("p","sm",!back?"About fifteen minutes. Sound on. Flashing, sudden noise, a voice, and a great many teeth. It remembers you between visits. Nothing you type leaves your phone unless you hand it to someone yourself.":
+    J.mix?"Reruns. The same warnings as last time, in a different order. Still nothing leaves your phone.":"You know the warnings. You've heard them four times. Nothing leaves your phone. Everything else does.");
   sm.style.marginTop="18px";c.appendChild(sm);
-  const go=txt("button","btn","I am of sound mind"),no=txt("button","btn ghost","I am impressionable");
-  c.appendChild(go);c.appendChild(no);
+  /* returning visitors are not asked the visit-1 question again: one different button, no second choice */
+  const go=txt("button","btn",!back?"I am of sound mind":J.mix?"roll the reruns":"fine. come in."),no=txt("button","btn ghost","I am impressionable");
+  c.appendChild(go);if(!back)c.appendChild(no);
   const start=()=>{
     J.start();
     if(S.visits>1)J.next();

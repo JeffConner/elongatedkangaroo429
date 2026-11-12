@@ -462,8 +462,8 @@ J.scene("h-garage",()=>{
   const fd=(k,label,opts)=>{const f=el("div","hfield");f.appendChild(txt("label","",label));const ch=el("div","hchips");f.appendChild(ch);
     opts.forEach((o,i)=>{const b=txt("button","",F(o));ch.appendChild(b);if(i===0)b.dataset.act="tap";b.dataset.pri=String(10-Object.keys(val).indexOf(k));
       b.addEventListener("click",()=>{val[k]=F(o);[...ch.children].forEach(x=>{x.classList.remove("on");delete x.dataset.act});b.classList.add("on");A.click();draw();check()})});sh.appendChild(f)};
-  const nf=el("div","hfield");nf.appendChild(txt("label","","Name it answers to"));const inp=el("input","hin");inp.type="text";inp.maxLength=20;inp.placeholder="what do they call you";inp.setAttribute("autocomplete","off");inp.dataset.act="type:"+(nm()||"Jeff");inp.dataset.pri="20";nf.appendChild(inp);
-  inp.addEventListener("input",()=>{val.name=inp.value.trim().slice(0,20);if(val.name)delete inp.dataset.act;draw();check()});sh.appendChild(nf);
+  /* the house already knows the name; it only asks which one goes on the flyer */
+  fd("name","Name it answers to",[nm()?nm().slice(0,20):"Jeff #{no}","Jeff, eventually","the sound the stairs make"]);
   fd("seen","Last seen",["in the hallway at {t}","inside a {model}","one room away, always"]);
   fd("desc","Description",["medium build, {teeth} teeth, maybe {teeth1}","looks like Jeff from far away and also from close up","wears its own face a little loose"]);
   fd("temp","Temperament",["skittish, but reads everything","friendly to anyone named Jeff","comes when the group calls"]);
